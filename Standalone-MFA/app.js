@@ -37,9 +37,7 @@ router.get('/mfa', async function(req,res){
 
 
 router.post('/loginNative', async function(req,res){
-  console.log(req.body);
   const users = JSON.parse(fs.readFileSync('users.json', 'utf8'));
-  console.log(users);
   const authuser = users.filter((user) => user.username === req.body.username);
   if (authuser.length == 0){
     res.status(401).send("Username not found");
@@ -58,11 +56,14 @@ router.post('/loginNative', async function(req,res){
 
     var claims = JSON.stringify({
       username: authuser[0].username,
+      exp: Math.floor(Date.now() / 1000) + 1,
     });
 
+    // Generate signed user token
     const authToken= await jose.JWS.createSign(opt, key).update(claims).final();
-    console.log(authToken);
+    //console.log(authToken);
     
+    // Call Auth0 token URL passing the signed user token as password
     let data = qs.stringify({
       'grant_type': 'http://auth0.com/oauth/grant-type/password-realm',
       'scope': 'openid offline_access',
@@ -88,9 +89,10 @@ router.post('/loginNative', async function(req,res){
       console.log(JSON.stringify(response.data));
     })
     .catch((error) => {
+      // Extract MFA token
       if ((error.response.status == 403) && (error.response.data.error == 'mfa_required')){
-        console.log(error.response.data.mfa_token);
         mfaToken = error.response.data.mfa_token;
+        // Call Auth0 MFA URL to initiate MFA
         let data2 = JSON.stringify({
           "client_id": process.env.clientId,
           "client_secret": process.env.clientSecret,
@@ -111,7 +113,6 @@ router.post('/loginNative', async function(req,res){
         
         axios.request(config2)
         .then((response2) => {
-          console.log(JSON.stringify(response2.data));
           oobCode = response2.data.oob_code;
           res.redirect("/mfa");
         })
@@ -125,11 +126,10 @@ router.post('/loginNative', async function(req,res){
   }
 });
 
-router.post('/mfaVerify', async function(req,res){
-  console.log(req.body);
-  
+router.post('/mfaVerify', async function(req,res){  
   const otp = req.body.otp;
 
+  // Call Auth0 token URL with MFA response
   let data = qs.stringify({
     'grant_type': 'http://auth0.com/oauth/grant-type/mfa-oob',
     'mfa_token': mfaToken,
@@ -151,7 +151,7 @@ router.post('/mfaVerify', async function(req,res){
 
   axios.request(config)
   .then((response) => {
-    console.log(JSON.stringify(response.data));
+    //console.log(JSON.stringify(response.data));
     authenticatedUser.access_token = response.data.access_token;
     authenticatedUser.id_token = response.data.id_token;
     res.redirect("/profile");
