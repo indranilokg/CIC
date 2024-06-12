@@ -92,13 +92,13 @@ router.post('/loginNative', async function(req,res){
       // Extract MFA token
       if ((error.response.status == 403) && (error.response.data.error == 'mfa_required')){
         mfaToken = error.response.data.mfa_token;
+    
         // Call Auth0 MFA URL to initiate MFA
         let data2 = JSON.stringify({
           "client_id": process.env.clientId,
           "client_secret": process.env.clientSecret,
           "challenge_type": "oob",
-          "mfa_token": mfaToken,
-          "authenticator_id": process.env.authenticatorId
+          "mfa_token": mfaToken
         });
         
         let config2 = {

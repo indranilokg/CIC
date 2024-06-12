@@ -3,7 +3,9 @@
 This is plain vanilla **JavaScript** and **HTML** sample implementation of a standalone MFA scenario using **Okta Customer Identity Cloud (Auth0)**.
 
 **Scenario:**
-The application uses its own login process. After primary authentication, it calls Auth0 API for MFA and obtains Auth0 ID and access tokens. In the sample, primary authentication is done from `users.json` file that holds user credentials. In practical use cases, it would possibly use an LDAP, database, or a legacy identity provider.
+The application uses its own login process. After primary authentication, it calls Auth0 API for MFA and obtains Auth0 ID and access tokens. In the sample, primary authentication is done from `users.json` file that holds user credentials. A real system would probably use an LDAP, database, or a legacy identity provider.
+
+The sample uses MFA using phone OTP. It can be easily adapted for other MFA factors.
 
 ## Deploy Sample Application
 
@@ -32,7 +34,7 @@ The application uses its own login process. After primary authentication, it cal
 	node genkey.sh
 	```
 	
-	This will generate the key files `keys.json` and `publickey.json`. 
+	This will generate the key files `keys.json` and `publickey.json`
 	
 	**Note**: The public key details from `publickey.json` are needed for Auth0 configuration.
 
@@ -45,6 +47,10 @@ Create a database connection in Auth0 -
 * **Requires Username:** Disabled
 * **Import Users to Auth0:** Disabled
 * **Use my own database:** Enabled
+* **Database Settings:** Create a key `pkey` with public key value from the file `publickey.json`
+
+![Database Key](./images/dbkey.png)
+
 * **Database Action Scripts: Login:**
 
 ```
@@ -76,9 +82,6 @@ async function login(email, password, callback) {
 }
 ```
 
-* **Database Settings:** Create a key `pkey` with public key value from the file ``publickey.json`
-
-![Database Key](./images/dbkey.png)
 
 ## Configure Auth0 Application
 
@@ -94,6 +97,7 @@ async function login(email, password, callback) {
 
 ## Configure Sample Application
 
+
 * Move to the App directory 
 	
 ```
@@ -106,7 +110,7 @@ cd Standalone-MFA/
 cp env.template .env
 ```
 
-* Fill the `.env` file -
+* Fill the `.env` file - 
 
 ```
 tokenUrl = 'https://******/oauth/token'
@@ -114,8 +118,8 @@ mfaUrl = 'https://******//mfa/challenge'
 clientId =  ''
 clientSecret = ''
 connection = 'standalone-mfa'
-authenticatorId = ''
 ```
+
 
 * Create a file `users.json` creating a copy from `users.json.template`
 
@@ -138,7 +142,6 @@ cp users.json.template users.json
 ]
 ```
 
-
 * Run the application
 
 ```
@@ -147,4 +150,13 @@ node app.js
 
 * Access the application at - [http://localhost:3000](http://localhost:3000)
 
+
 * Login with one of the users in `users.json` file.
+
+* The sample application assumes a pre-enrolled phone factor for the user. The enrollment can be automated in line with the application. To manually pre-enroll - 
+
+	* Run the sample application and login for the first time. It will create the user in Auth0, but MFA step will fail. 
+	* Manually enroll SMS for the user from Auth0 admin console.
+![Manual enrollment](./images/enrollment.png)
+
+
